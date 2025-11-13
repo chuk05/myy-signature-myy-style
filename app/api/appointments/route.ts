@@ -1,35 +1,44 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+// Create Supabase client directly in the route
+const supabase = createClient(supabaseUrl!, supabaseAnonKey!)
 
 export async function POST(request: Request) {
-  console.log('=== APPOINTMENT API CALL STARTED ===')
+  console.log('Appointments POST called')
   
   try {
+    // Check if Supabase is configured
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({
+        error: 'Server configuration error: Missing Supabase credentials'
+      }, { status: 500 })
+    }
+
     const body = await request.json()
-    console.log('Request body:', JSON.stringify(body, null, 2))
-    
+    console.log('Request body received')
+
     const { customer, appointment } = body
 
-    // Validate required fields
+    // Validate input
     if (!customer?.email || !customer?.phone || !customer?.full_name) {
-      console.log('Missing customer fields')
-      return NextResponse.json(
-        { error: 'Missing required customer fields' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        error: 'Missing customer information: email, phone, and name are required'
+      }, { status: 400 })
     }
 
     if (!appointment?.staff_id || !appointment?.service_id || !appointment?.date || !appointment?.time) {
-      console.log('Missing appointment fields')
-      return NextResponse.json(
-        { error: 'Missing required appointment fields' },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        error: 'Missing appointment information: staff, service, date, and time are required'
+      }, { status: 400 })
     }
 
-    console.log('Inserting customer:', customer.email)
-    
-    // Insert customer
+    console.log('Creating customer:', customer.email)
+
+    // Create customer
     const { data: customerData, error: customerError } = await supabase
       .from('customers')
       .insert({
@@ -41,22 +50,41 @@ export async function POST(request: Request) {
       .single()
 
     if (customerError) {
-      console.error('Customer insert error:', customerError)
-      return NextResponse.json({ 
-        error: `Customer error: ${customerError.message}`,
-        details: customerError 
-      }, { status: 500 })
+      console.error('Customer creation failed:', customerError)
+      
+      // If customer already exists, try to find them
+      if (customerError.code === '23505') {
+        const { data: existingCustomer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('email', customer.email)
+          .single()
+
+        if (existingCustomer) {
+          console.log('Using existing customer:', existingCustomer.id)
+          var customerId = existingCustomer.id
+        } else {
+          return NextResponse.json({
+            error: `Customer error: ${customerError.message}`
+          }, { status: 500 })
+        }
+      } else {
+        return NextResponse.json({
+          error: `Customer error: ${customerError.message}`
+        }, { status: 500 })
+      }
+    } else {
+      console.log('New customer created:', customerData.id)
+      var customerId = customerData.id
     }
 
-    console.log('Customer created:', customerData?.id)
+    // Create appointment
+    console.log('Creating appointment for customer:', customerId)
 
-    // Insert appointment  
-    console.log('Inserting appointment for staff:', appointment.staff_id)
-    
     const { data: appointmentData, error: appointmentError } = await supabase
       .from('appointments')
       .insert({
-        customer_id: customerData.id,
+        customer_id: customerId,
         staff_id: appointment.staff_id,
         service_id: appointment.service_id,
         appointment_date: appointment.date,
@@ -67,10 +95,9 @@ export async function POST(request: Request) {
       .single()
 
     if (appointmentError) {
-      console.error('Appointment insert error:', appointmentError)
-      return NextResponse.json({ 
-        error: `Appointment error: ${appointmentError.message}`,
-        details: appointmentError 
+      console.error('Appointment creation failed:', appointmentError)
+      return NextResponse.json({
+        error: `Appointment error: ${appointmentError.message}`
       }, { status: 500 })
     }
 
@@ -78,23 +105,27 @@ export async function POST(request: Request) {
     
     return NextResponse.json({
       success: true,
+      message: 'Appointment booked successfully!',
       appointment: appointmentData,
-      customer: customerData
-    })
+      customer: { id: customerId, ...customer }
+    }, { status: 201 })
 
   } catch (error: any) {
-    console.error('Unexpected error in appointment API:', error)
-    return NextResponse.json({ 
-      error: `Unexpected error: ${error.message}`,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    console.error('Unexpected error in appointments API:', error)
+    return NextResponse.json({
+      error: `Server error: ${error.message}`
     }, { status: 500 })
   }
 }
 
 export async function GET() {
   try {
-    console.log('Fetching appointments...')
-    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({
+        error: 'Server configuration error'
+      }, { status: 500 })
+    }
+
     const { data, error } = await supabase
       .from('appointments')
       .select(`
@@ -106,15 +137,15 @@ export async function GET() {
       .order('appointment_date', { ascending: false })
 
     if (error) {
-      console.error('GET appointments error:', error)
-      throw error
+      return NextResponse.json({
+        error: `Database error: ${error.message}`
+      }, { status: 500 })
     }
 
-    console.log(`Found ${data?.length || 0} appointments`)
     return NextResponse.json(data || [])
-    
   } catch (error: any) {
-    console.error('GET appointments unexpected error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({
+      error: `Server error: ${error.message}`
+    }, { status: 500 })
   }
 }
