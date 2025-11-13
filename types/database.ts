@@ -250,3 +250,5 @@ export type StaffAvailability = Database['public']['Tables']['staff_availability
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type StaffService = Database['public']['Tables']['staff_services']['Row']
 export type WorkingHours = Database['public']['Tables']['working_hours']['Row']
+export type CustomerInsert = Database['public']['Tables']['customers']['Insert']
+export type AppointmentInsert = Database['public']['Tables']['appointments']['Insert']
