@@ -84,9 +84,11 @@ export default function BookingPage() {
       })
 
       if (response.ok) {
-        router.push('/booking/confirmation')
+        // ✅ FIXED: Correct path to confirmation page
+        router.push('/customer/booking/confirmation')
       } else {
-        alert('Error creating appointment. Please try again.')
+        const errorData = await response.json()
+        alert(`Error creating appointment: ${errorData.error}`)
       }
     } catch (error) {
       console.error('Error:', error)
@@ -159,7 +161,7 @@ export default function BookingPage() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="block text-sm font-medium text-[#222222] mb-2">
-                      Full Name
+                      Full Name *
                     </label>
                     <input
                       type="text"
@@ -167,12 +169,13 @@ export default function BookingPage() {
                       value={customerInfo.full_name}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, full_name: e.target.value })}
                       className="w-full p-3 border border-[#F0F0F0] rounded-lg focus:border-[#6A8EA4] focus:outline-none"
+                      placeholder="Enter your full name"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-[#222222] mb-2">
-                      Email
+                      Email *
                     </label>
                     <input
                       type="email"
@@ -180,12 +183,13 @@ export default function BookingPage() {
                       value={customerInfo.email}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                       className="w-full p-3 border border-[#F0F0F0] rounded-lg focus:border-[#6A8EA4] focus:outline-none"
+                      placeholder="Enter your email"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-[#222222] mb-2">
-                      Phone
+                      Phone *
                     </label>
                     <input
                       type="tel"
@@ -193,6 +197,7 @@ export default function BookingPage() {
                       value={customerInfo.phone}
                       onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                       className="w-full p-3 border border-[#F0F0F0] rounded-lg focus:border-[#6A8EA4] focus:outline-none"
+                      placeholder="Enter your phone number"
                     />
                   </div>
                 </div>
@@ -211,7 +216,7 @@ export default function BookingPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#6A8EA4] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#5a7a90] disabled:opacity-50"
+                  className="w-full bg-[#6A8EA4] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#5a7a90] disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Booking...' : 'Confirm Appointment'}
                 </button>
@@ -224,7 +229,7 @@ export default function BookingPage() {
             {step > 1 && (
               <button
                 onClick={() => setStep(step - 1)}
-                className="bg-[#F0F0F0] text-[#222222] py-2 px-6 rounded-lg font-semibold hover:bg-gray-200"
+                className="bg-[#F0F0F0] text-[#222222] py-2 px-6 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
               >
                 Back
               </button>
