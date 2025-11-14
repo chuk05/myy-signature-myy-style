@@ -8,7 +8,11 @@ interface StaffSelectionProps {
   onStaffSelect: (staff: Staff) => void
 }
 
-export default function StaffSelection({ staff, selectedStaff, onStaffSelect }: StaffSelectionProps) {
+export default function StaffSelection({ 
+  staff, 
+  selectedStaff, 
+  onStaffSelect 
+}: StaffSelectionProps) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#222222]">Select Your Stylist</h3>
@@ -27,9 +31,17 @@ export default function StaffSelection({ staff, selectedStaff, onStaffSelect }: 
             {staffMember.specialty && (
               <p className="text-sm text-gray-600 mt-1">{staffMember.specialty}</p>
             )}
+            {staffMember.phone && (
+              <p className="text-sm text-gray-500 mt-1">{staffMember.phone}</p>
+            )}
           </div>
         ))}
       </div>
+      {staff.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          No staff members available.
+        </div>
+      )}
     </div>
   )
 }

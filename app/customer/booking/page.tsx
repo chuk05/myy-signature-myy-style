@@ -1,17 +1,39 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Service, Staff } from '@/types/database'
 import ServiceSelection from '@/components/booking/ServiceSelection'
 import StaffSelection from '@/components/booking/StaffSelection'
 import DateTimeSelection from '@/components/booking/DateTimeSelection'
+import CustomerInfoForm from '@/components/booking/CustomerInfoForm'
 
-export default function BookingPage() {
+// Loading component for Suspense fallback
+function BookingLoading() {
+  return (
+    <div className="min-h-screen bg-[#F0F0F0] py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow-sm p-6 md:p-8">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#6A8EA4] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading booking system...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Main booking component that uses useSearchParams
+function BookingContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const initialCategory = searchParams.get('category')
+
   const [step, setStep] = useState(1)
   const [services, setServices] = useState<Service[]>([])
   const [staff, setStaff] = useState<Staff[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(initialCategory)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null)
   const [appointmentDateTime, setAppointmentDateTime] = useState({ date: '', time: '' })
@@ -22,14 +44,25 @@ export default function BookingPage() {
   })
   const [loading, setLoading] = useState(false)
 
+  const categories = [
+    { id: 'all', name: 'All Services' },
+    { id: 'women', name: "Women's Services" },
+    { id: 'men', name: "Men's Services" },
+    { id: 'special', name: 'Special Services' }
+  ]
+
   useEffect(() => {
     fetchServices()
     fetchStaff()
-  }, [])
+  }, [selectedCategory])
 
   const fetchServices = async () => {
     try {
-      const response = await fetch('/api/services')
+      const url = selectedCategory && selectedCategory !== 'all' 
+        ? `/api/services?category=${selectedCategory}`
+        : '/api/services'
+      
+      const response = await fetch(url)
       const data = await response.json()
       setServices(data)
     } catch (error) {
@@ -47,6 +80,12 @@ export default function BookingPage() {
     }
   }
 
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId)
+    setSelectedService(null)
+    setStep(1)
+  }
+
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service)
     setStep(2)
@@ -60,6 +99,10 @@ export default function BookingPage() {
   const handleDateTimeSelect = (date: string, time: string) => {
     setAppointmentDateTime({ date, time })
     setStep(4)
+  }
+
+  const handleCustomerInfoChange = (info: { full_name: string; email: string; phone: string }) => {
+    setCustomerInfo(info)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -84,11 +127,10 @@ export default function BookingPage() {
       })
 
       if (response.ok) {
-        // ✅ FIXED: Correct path to confirmation page
         router.push('/customer/booking/confirmation')
       } else {
-        const errorData = await response.json()
-        alert(`Error creating appointment: ${errorData.error}`)
+        const error = await response.json()
+        alert(`Error: ${error.error}`)
       }
     } catch (error) {
       console.error('Error:', error)
@@ -135,10 +177,12 @@ export default function BookingPage() {
               <ServiceSelection
                 services={services}
                 selectedService={selectedService}
+                selectedCategory={selectedCategory}
+                categories={categories}
                 onServiceSelect={handleServiceSelect}
+                onCategorySelect={handleCategorySelect}
               />
             )}
-
             {step === 2 && (
               <StaffSelection
                 staff={staff}
@@ -146,81 +190,22 @@ export default function BookingPage() {
                 onStaffSelect={handleStaffSelect}
               />
             )}
-
             {step === 3 && (
               <DateTimeSelection
-                staffId={selectedStaff?.id || null}
-                onTimeSelect={handleDateTimeSelect}
+                selectedStaff={selectedStaff}
+                onDateTimeSelect={handleDateTimeSelect}
               />
             )}
-
             {step === 4 && (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <h3 className="text-lg font-semibold text-[#222222]">Your Information</h3>
-                
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-[#222222] mb-2">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={customerInfo.full_name}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, full_name: e.target.value })}
-                      className="w-full p-3 border border-[#F0F0F0] rounded-lg focus:border-[#6A8EA4] focus:outline-none"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#222222] mb-2">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={customerInfo.email}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-                      className="w-full p-3 border border-[#F0F0F0] rounded-lg focus:border-[#6A8EA4] focus:outline-none"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-[#222222] mb-2">
-                      Phone *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                      className="w-full p-3 border border-[#F0F0F0] rounded-lg focus:border-[#6A8EA4] focus:outline-none"
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                </div>
-
-                {/* Appointment Summary */}
-                <div className="bg-[#F0F0F0] p-4 rounded-lg">
-                  <h4 className="font-semibold text-[#222222] mb-2">Appointment Summary</h4>
-                  <p><strong>Service:</strong> {selectedService?.name}</p>
-                  <p><strong>Stylist:</strong> {selectedStaff?.full_name}</p>
-                  <p><strong>Date:</strong> {new Date(appointmentDateTime.date).toLocaleDateString()}</p>
-                  <p><strong>Time:</strong> {appointmentDateTime.time}</p>
-                  <p><strong>Duration:</strong> {selectedService?.duration} minutes</p>
-                  <p><strong>Price:</strong> ${selectedService?.price}</p>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#6A8EA4] text-white py-3 px-6 rounded-lg font-semibold hover:bg-[#5a7a90] disabled:opacity-50 transition-colors"
-                >
-                  {loading ? 'Booking...' : 'Confirm Appointment'}
-                </button>
-              </form>
+              <CustomerInfoForm
+                customerInfo={customerInfo}
+                selectedService={selectedService}
+                selectedStaff={selectedStaff}
+                appointmentDateTime={appointmentDateTime}
+                loading={loading}
+                onSubmit={handleSubmit}
+                onCustomerInfoChange={handleCustomerInfoChange}
+              />
             )}
           </div>
 
@@ -239,5 +224,14 @@ export default function BookingPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Main page component with Suspense boundary
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<BookingLoading />}>
+      <BookingContent />
+    </Suspense>
   )
 }

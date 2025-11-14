@@ -77,8 +77,9 @@ export interface Database {
           description: string | null
           duration: number
           price: number
-          created_at: string
+          category: string // NEW FIELD
           is_active: boolean
+          created_at: string
         }
         Insert: {
           id?: string
@@ -86,8 +87,9 @@ export interface Database {
           description?: string | null
           duration: number
           price: number
-          created_at?: string
+          category: string // NEW FIELD
           is_active?: boolean
+          created_at?: string
         }
         Update: {
           id?: string
@@ -95,8 +97,9 @@ export interface Database {
           description?: string | null
           duration?: number
           price?: number
-          created_at?: string
+          category?: string // NEW FIELD
           is_active?: boolean
+          created_at?: string
         }
       }
       staff: {

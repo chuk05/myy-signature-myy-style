@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const { data: services, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category')
+
+    let query = supabase
       .from('services')
       .select('*')
       .eq('is_active', true)
       .order('name')
+
+    // Filter by category if provided
+    if (category && category !== 'all') {
+      query = query.eq('category', category)
+    }
+
+    const { data: services, error } = await query
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

@@ -1,375 +1,451 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Menu, X, Phone, MapPin, Clock, ChevronRight, Star, Scissors, Palette, Sparkles, ChevronLeft, ChevronRight as RightIcon } from 'lucide-react'
 
 export default function Home() {
-  const services = [
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [currentTestimonial, setCurrentTestimonial] = useState(0)
+
+  // Hero Carousel Images
+  const carouselImages = [
     {
-      name: 'Women\'s Cut & Style',
-      description: 'Precision cut, shampoo, and blow-dry style',
-      price: 75,
-      duration: 60
+      src: '/images/hero-salon.jpg',
+      alt: 'Luxury Salon Interior',
+      title: 'Premium Salon Experience',
+      description: 'Step into our elegant, modern space designed for your comfort'
     },
     {
-      name: 'Men\'s Cut',
-      description: 'Classic barber cut and style',
-      price: 35,
-      duration: 30
+      src: '/images/gallery-1.jpg',
+      alt: 'Hair Styling Service',
+      title: 'Expert Hair Styling',
+      description: 'Transform your look with our talented stylists'
     },
     {
-      name: 'Color & Highlights',
-      description: 'Full color with highlights and toner',
-      price: 150,
-      duration: 120
+      src: '/images/gallery-2.jpg',
+      alt: 'Color Treatment',
+      title: 'Vibrant Color Services',
+      description: 'Experience stunning color transformations'
     }
   ]
 
-  const staff = [
+  // Services data
+  const services = [
     {
-      name: 'Sarah Johnson',
-      specialty: 'Color Specialist',
-      bio: 'With over 10 years of experience in color theory and technique.'
+      icon: <Scissors className="w-8 h-8" />,
+      name: 'Precision Cuts',
+      description: 'Expert haircuts tailored to your style',
+      price: 'From $35',
+      image: '/images/service-women.jpg'
     },
     {
-      name: 'Marcus Williams',
-      specialty: 'Cutting Specialist',
-      bio: 'Expert in precision cuts and modern styling techniques.'
+      icon: <Palette className="w-8 h-8" />,
+      name: 'Color & Highlights',
+      description: 'Vibrant colors and beautiful highlights',
+      price: 'From $150',
+      image: '/images/service-special.jpg'
     },
     {
-      name: 'Emily Chen',
-      specialty: 'Extensions',
-      bio: 'Specialized in hair extensions and transformative styling.'
+      icon: <Sparkles className="w-8 h-8" />,
+      name: 'Special Treatments',
+      description: 'Premium hair treatments and styling',
+      price: 'From $200',
+      image: '/images/service-men.jpg'
     }
   ]
+
+  // Testimonials
+  const testimonials = [
+    {
+      name: 'Sarah M.',
+      text: 'Best salon experience in Atlanta! The stylists are true artists.',
+      rating: 5,
+      image: '/images/staff-1.jpg'
+    },
+    {
+      name: 'James L.',
+      text: 'Finally found a salon that understands my hair needs perfectly.',
+      rating: 5,
+      image: '/images/staff-2.jpg'
+    },
+    {
+      name: 'Emily R.',
+      text: 'The color treatment exceeded all my expectations. Absolutely stunning!',
+      rating: 5,
+      image: '/images/staff-3.jpg'
+    }
+  ]
+
+  // Auto-advance carousels
+  useEffect(() => {
+    const heroTimer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length)
+    }, 5000)
+
+    const testimonialTimer = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
+    }, 4000)
+
+    return () => {
+      clearInterval(heroTimer)
+      clearInterval(testimonialTimer)
+    }
+  }, [])
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % carouselImages.length)
+  }
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + carouselImages.length) % carouselImages.length)
+  }
+
+  const nextTestimonial = () => {
+    setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
+  }
+
+  const prevTestimonial = () => {
+    setCurrentTestimonial((prev) => (prev - 1 + testimonials.length) % testimonials.length)
+  }
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <Star
+        key={i}
+        className={`w-4 h-4 ${i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+      />
+    ))
+  }
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-[#F0F0F0] sticky top-0 z-50">
+      {/* Enhanced Navigation */}
+      <nav className="fixed top-0 w-full bg-white/90 backdrop-blur-md z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center">
-              <div className="relative w-10 h-10 mr-3">
+          <div className="flex justify-between items-center h-20">
+            {/* Logo - Bigger with actual image */}
+            <Link href="/" className="flex items-center">
+              <div className="relative w-16 h-16">
                 <Image
                   src="/logos/logo.png"
                   alt="Myy Signature Myy Style"
-                  width={40}
-                  height={40}
-                  className="object-contain"
+                  width={64}
+                  height={64}
+                  className="object-contain rounded-2xl"
                 />
               </div>
-              <div className="text-xl font-bold text-[#222222]">
-                Myy Signature<br />Myy Style
-              </div>
-            </div>
+            </Link>
 
-            {/* Navigation Links */}
+            {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-8">
-              <Link href="/" className="text-[#222222] hover:text-[#6A8EA4] transition-colors font-medium">
+              <Link href="/" className="text-gray-700 hover:text-[#6A8EA4] transition-colors font-medium">
                 Home
               </Link>
-              <Link href="/customer/booking" className="text-[#222222] hover:text-[#6A8EA4] transition-colors font-medium">
+              <Link href="/customer/booking" className="text-gray-700 hover:text-[#6A8EA4] transition-colors font-medium">
                 Services
               </Link>
-              <Link href="#team" className="text-[#222222] hover:text-[#6A8EA4] transition-colors font-medium">
-                Our Team
-              </Link>
-              <Link href="/customer/booking" className="bg-[#6A8EA4] text-white px-6 py-2 rounded-lg font-semibold hover:bg-[#5a7a90] transition-colors">
+              <Link href="/customer/booking" className="text-gray-700 hover:text-[#6A8EA4] transition-colors font-medium">
                 Book Now
               </Link>
-              <Link href="/staff" className="text-[#222222] hover:text-[#6A8EA4] transition-colors font-medium">
-                Staff Login
+              <Link href="/admin" className="text-gray-700 hover:text-[#6A8EA4] transition-colors font-medium">
+                Admin
+              </Link>
+              <Link 
+                href="/customer/booking" 
+                className="bg-gradient-to-r from-[#6A8EA4] to-[#5a7a90] text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-300"
+              >
+                Get Started
               </Link>
             </div>
 
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button className="text-[#222222] hover:text-[#6A8EA4] transition-colors">
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="text-gray-700 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
             </div>
           </div>
+
+          {/* Mobile Navigation */}
+          {isMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 bg-white/95 backdrop-blur-md">
+              <div className="px-2 pt-2 pb-4 space-y-1">
+                <Link 
+                  href="/" 
+                  className="block px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link 
+                  href="/customer/booking" 
+                  className="block px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Services
+                </Link>
+                <Link 
+                  href="/customer/booking" 
+                  className="block px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Book Now
+                </Link>
+                <Link 
+                  href="/admin" 
+                  className="block px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors font-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+                <Link 
+                  href="/customer/booking" 
+                  className="block px-3 py-3 bg-gradient-to-r from-[#6A8EA4] to-[#5a7a90] text-white rounded-lg text-center font-semibold hover:shadow-lg transition-all"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Get Started
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
-      {/* Hero Section with Background Image */}
-      <section className="relative bg-[#F0F0F0] py-20 lg:py-32 overflow-hidden">
-        {/* Background Image */}
+      {/* Hero Section with Carousel */}
+      <div className="pt-20 min-h-screen flex items-center relative">
+        {/* Background Carousel */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black opacity-10"></div>
-          <Image
-            src="/images/hero-salon.jpg"
-            alt="Myy Signature Myy Style Salon"
-            fill
-            className="object-cover"
-            priority
-          />
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl lg:text-6xl font-bold text-[#222222] mb-6 leading-tight">
-            Atlanta's Premier<br />
-            <span className="text-[#6A8EA4]">Salon Experience</span>
-          </h1>
-          <p className="text-xl text-[#222222] mb-8 max-w-3xl mx-auto leading-relaxed">
-            Where your signature style begins. Experience premium hair care with our 
-            expert stylists in the heart of Atlanta.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/customer/booking" 
-              className="bg-[#6A8EA4] text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#5a7a90] transition-colors shadow-lg"
+          {carouselImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentSlide ? 'opacity-100' : 'opacity-0'
+              }`}
             >
-              Book Your Appointment
-            </Link>
-            <Link 
-              href="#services" 
-              className="bg-white text-[#222222] border border-[#6A8EA4] px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#F0F0F0] transition-colors"
-            >
-              View Services
-            </Link>
-          </div>
+              <Image
+                src={image.src}
+                alt={image.alt}
+                fill
+                className="object-cover"
+                priority={index === 0}
+              />
+              <div className="absolute inset-0 bg-black/40"></div>
+            </div>
+          ))}
         </div>
-      </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-[#222222] mb-4">
-              Our Services
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              From precision cuts to vibrant color transformations, we offer a full range 
-              of hair services tailored to your unique style.
-            </p>
-          </div>
+        {/* Carousel Controls */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10 bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-colors"
+          aria-label="Next slide"
+        >
+          <RightIcon className="w-6 h-6" />
+        </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <div 
-                key={index} 
-                className="bg-[#F0F0F0] p-8 rounded-xl hover:shadow-lg transition-all duration-300 border border-transparent hover:border-[#6A8EA4] group"
-              >
-                <div className="relative w-full h-48 mb-6 bg-[#6A8EA4] rounded-lg overflow-hidden">
-                  <Image
-                    src={`/images/service-${index + 1}.jpg`}
-                    alt={service.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+        {/* Carousel Indicators */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10 flex space-x-3">
+          {carouselImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                index === currentSlide ? 'bg-white scale-125' : 'bg-white/50'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+
+        {/* Content Overlay */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
+            <div className="space-y-8 text-white">
+              <div className="space-y-4">
+                <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
+                  {carouselImages[currentSlide].title}
+                </h1>
+                <p className="text-xl opacity-90 leading-relaxed">
+                  {carouselImages[currentSlide].description}
+                </p>
+              </div>
+
+              {/* Key Features */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center space-x-2 opacity-90">
+                  <Star className="w-5 h-5 text-white" />
+                  <span className="font-medium">5-Star Rated</span>
                 </div>
-                <div className="text-center">
-                  <h3 className="text-xl font-semibold text-[#222222] mb-3">
-                    {service.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4 leading-relaxed">
-                    {service.description}
-                  </p>
-                  <div className="flex justify-between items-center mt-6">
-                    <span className="text-2xl font-bold text-[#6A8EA4]">
-                      ${service.price}
-                    </span>
-                    <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">
-                      {service.duration} min
-                    </span>
+                <div className="flex items-center space-x-2 opacity-90">
+                  <Clock className="w-5 h-5 text-white" />
+                  <span className="font-medium">Flexible Hours</span>
+                </div>
+                <div className="flex items-center space-x-2 opacity-90">
+                  <MapPin className="w-5 h-5 text-white" />
+                  <span className="font-medium">Prime Location</span>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link 
+                  href="/customer/booking"
+                  className="bg-white text-[#6A8EA4] px-8 py-4 rounded-full font-semibold hover:shadow-xl transition-all duration-300 text-center flex items-center justify-center space-x-2"
+                >
+                  <span>Book Your Appointment</span>
+                  <ChevronRight className="w-5 h-5" />
+                </Link>
+                <Link 
+                  href="tel:404-555-0123"
+                  className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-[#6A8EA4] transition-all duration-300 text-center flex items-center justify-center space-x-2"
+                >
+                  <Phone className="w-5 h-5" />
+                  <span>(404) 555-0123</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Content - Services Preview */}
+            <div className="space-y-6">
+              {/* Services Cards */}
+              <div className="grid gap-4">
+                {services.map((service, index) => (
+                  <div 
+                    key={index}
+                    className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-white/20 group cursor-pointer"
+                    onClick={() => window.location.href = '/customer/booking'}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="relative w-16 h-16 rounded-xl overflow-hidden">
+                          <Image
+                            src={service.image}
+                            alt={service.name}
+                            fill
+                            className="object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-br from-[#6A8EA4] to-[#5a7a90] opacity-20"></div>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 text-lg">{service.name}</h3>
+                          <p className="text-gray-600 text-sm mt-1">{service.description}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-[#6A8EA4] text-lg">{service.price}</p>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-[#6A8EA4] transition-colors mt-1" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Testimonials Carousel */}
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-lg border border-white/20">
+                <h3 className="font-semibold text-gray-900 mb-4">What Our Clients Say</h3>
+                <div className="relative">
+                  {testimonials.map((testimonial, index) => (
+                    <div 
+                      key={index}
+                      className={`transition-opacity duration-500 ${
+                        index === currentTestimonial ? 'opacity-100' : 'opacity-0 absolute inset-0'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="relative w-12 h-12 rounded-full overflow-hidden">
+                          <Image
+                            src={testimonial.image}
+                            alt={testimonial.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-1 mb-2">
+                            {renderStars(testimonial.rating)}
+                          </div>
+                          <p className="text-gray-700 text-sm italic">"{testimonial.text}"</p>
+                          <p className="text-gray-900 font-semibold text-sm mt-2">— {testimonial.name}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Testimonial Controls */}
+                  <div className="flex justify-between items-center mt-4">
+                    <div className="flex space-x-2">
+                      {testimonials.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentTestimonial(index)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            index === currentTestimonial ? 'bg-[#6A8EA4] scale-125' : 'bg-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={prevTestimonial}
+                        className="p-1 text-gray-400 hover:text-[#6A8EA4] transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={nextTestimonial}
+                        className="p-1 text-gray-400 hover:text-[#6A8EA4] transition-colors"
+                      >
+                        <RightIcon className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
 
-          <div className="text-center mt-12">
-            <Link 
-              href="/customer/booking" 
-              className="inline-block bg-[#6A8EA4] text-white px-8 py-4 rounded-lg font-semibold hover:bg-[#5a7a90] transition-colors"
-            >
-              View All Services & Pricing
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Team Section */}
-      <section id="team" className="py-16 lg:py-24 bg-[#F0F0F0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-[#222222] mb-4">
-              Meet Our Expert Stylists
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Our talented team of professionals is dedicated to helping you discover 
-              and perfect your signature style.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {staff.map((member, index) => (
-              <div 
-                key={index} 
-                className="bg-white p-8 rounded-xl text-center hover:shadow-lg transition-all duration-300 group"
-              >
-                <div className="relative w-32 h-32 mx-auto mb-6 rounded-full overflow-hidden border-4 border-[#6A8EA4]">
-                  <Image
-                    src={`/images/staff-${index + 1}.jpg`}
-                    alt={member.name}
-                    fill
-                    className="object-cover group-hover:scale-110 transition-transform duration-300"
-                  />
+          {/* Bottom Info Bar */}
+          <div className="mt-16 border-t border-white/20 pt-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-white">
+              <div className="flex flex-col items-center space-y-2">
+                <MapPin className="w-6 h-6" />
+                <div>
+                  <p className="font-semibold">123 Salon Street</p>
+                  <p className="opacity-90 text-sm">Atlanta, GA 30301</p>
                 </div>
-                <h3 className="text-xl font-semibold text-[#222222] mb-2">
-                  {member.name}
-                </h3>
-                <p className="text-[#6A8EA4] font-medium mb-4">
-                  {member.specialty}
-                </p>
-                <p className="text-gray-600 text-sm leading-relaxed">
-                  {member.bio}
-                </p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery Section */}
-      <section className="py-16 lg:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-[#222222] mb-4">
-              Our Work
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              See the stunning transformations created by our talented stylists.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-              <div key={item} className="relative aspect-square bg-[#F0F0F0] rounded-lg overflow-hidden group">
-                <Image
-                  src={`/images/gallery-${item}.jpg`}
-                  alt="Salon work example"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section with Image */}
-      <section className="py-16 lg:py-24 bg-[#222222] text-white relative overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-black opacity-60"></div>
-          <Image
-            src="/images/cta-background.jpg"
-            alt="Salon interior"
-            fill
-            className="object-cover"
-          />
-        </div>
-        
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-            Ready to Transform Your Look?
-          </h2>
-          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto">
-            Book your appointment today and experience the Myy Signature Myy Style difference. 
-            Your perfect style is just a click away.
-          </p>
-          <Link 
-            href="/customer/booking" 
-            className="inline-block bg-[#6A8EA4] text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-[#5a7a90] transition-colors shadow-lg"
-          >
-            Book Your Appointment Now
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-[#222222] text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="md:col-span-2">
-              <div className="flex items-center mb-4">
-                <div className="relative w-8 h-8 mr-3">
-                  <Image
-                    src="/logos/logo-white.png"
-                    alt="Myy Signature Myy Style"
-                    width={32}
-                    height={32}
-                    className="object-contain"
-                  />
+              <div className="flex flex-col items-center space-y-2">
+                <Clock className="w-6 h-6" />
+                <div>
+                  <p className="font-semibold">Open Today</p>
+                  <p className="opacity-90 text-sm">9:00 AM - 7:00 PM</p>
                 </div>
-                <h3 className="text-2xl font-bold">Myy Signature Myy Style</h3>
               </div>
-              <p className="text-gray-300 mb-4 max-w-md">
-                Premier hair salon in Atlanta, Georgia. Where your signature style begins 
-                with our expert team of stylists and color specialists.
-              </p>
-              <div className="flex space-x-4">
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                  <span className="sr-only">Facebook</span>
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
-                </a>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                  <span className="sr-only">Instagram</span>
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987c6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.49-3.323-1.297C4.22 14.815 3.73 13.664 3.73 12.367s.49-2.448 1.396-3.323c.875-.807 2.026-1.297 3.323-1.297s2.448.49 3.323 1.297c.906.875 1.396 2.026 1.396 3.323s-.49 2.448-1.396 3.323c-.875.807-2.026 1.297-3.323 1.297z"/>
-                  </svg>
-                </a>
+              <div className="flex flex-col items-center space-y-2">
+                <Phone className="w-6 h-6" />
+                <div>
+                  <p className="font-semibold">Call Us</p>
+                  <p className="opacity-90 text-sm">(404) 555-0123</p>
+                </div>
               </div>
             </div>
-
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/" className="text-gray-300 hover:text-white transition-colors">
-                    Home
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/customer/booking" className="text-gray-300 hover:text-white transition-colors">
-                    Services
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#team" className="text-gray-300 hover:text-white transition-colors">
-                    Our Team
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/customer/booking" className="text-gray-300 hover:text-white transition-colors">
-                    Book Appointment
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
-              <address className="text-gray-300 not-italic">
-                <p className="mb-2">123 Salon Street</p>
-                <p className="mb-2">Atlanta, GA 30301</p>
-                <p className="mb-2">(404) 555-0123</p>
-                <p>info@mysignaturemystyle.com</p>
-              </address>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; {new Date().getFullYear()} Myy Signature Myy Style. All rights reserved.</p>
           </div>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
