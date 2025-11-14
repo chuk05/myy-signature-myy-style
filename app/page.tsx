@@ -10,6 +10,42 @@ export default function Home() {
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  const [isOpen, setIsOpen] = useState(false)
+
+  // Salon information
+  const salonInfo = {
+    address: "123 Salon Street, Atlanta, GA 30301",
+    phone: "(404) 555-0123",
+    hours: {
+      open: 9, // 9 AM
+      close: 17 // 7 PM
+    },
+    googleMapsUrl: "https://maps.google.com/?q=123+Salon+Street+Atlanta+GA+30301"
+  }
+
+  // Check if salon is currently open based on system time
+  useEffect(() => {
+    const checkOpeningStatus = () => {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentDay = now.getDay() // 0 = Sunday, 6 = Saturday
+      
+      // Salon is closed on Sundays (day 0)
+      if (currentDay === 0) {
+        setIsOpen(false)
+        return
+      }
+      
+      // Check if current time is within opening hours
+      setIsOpen(currentHour >= salonInfo.hours.open && currentHour < salonInfo.hours.close)
+    }
+
+    checkOpeningStatus()
+    // Update status every minute
+    const interval = setInterval(checkOpeningStatus, 60000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
   // Header expansion content
   const headerContent = {
@@ -155,7 +191,7 @@ export default function Home() {
       {/* Navigation Bar */}
       <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-24">
+          <div className="flex justify-between items-center h-18">
             {/* Logo - Left - 4x Bigger, Centered Height, No Round, No BG Color */}
             <Link href="/" className="flex items-center h-full py-4">
               <div className="relative h-full flex items-center">
@@ -274,10 +310,10 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Body Section */}
+      {/* Body Section - Now fits one screen */}
       <main className="flex-1">
         {/* Hero Section with Carousel */}
-        <div className="min-h-screen flex items-center relative">
+        <div className="h-[60vh] flex items-center relative">
           {/* Background Carousel */}
           <div className="absolute inset-0 z-0">
             {carouselImages.map((image, index) => (
@@ -351,11 +387,20 @@ export default function Home() {
                   </div>
                   <div className="flex items-center space-x-2 opacity-90">
                     <Clock className="w-5 h-5 text-white" />
-                    <span className="font-medium">Flexible Hours</span>
+                    <span className="font-medium">
+                      {isOpen ? 'Open Now' : 'Closed Now'}
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2 opacity-90">
-                    <MapPin className="w-5 h-5 text-white" />
-                    <span className="font-medium">Prime Location</span>
+                    <a 
+                      href={salonInfo.googleMapsUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 hover:text-[#FFD700] transition-colors"
+                    >
+                      <MapPin className="w-5 h-5 text-white" />
+                      <span className="font-medium">Prime Location</span>
+                    </a>
                   </div>
                 </div>
 
@@ -369,11 +414,11 @@ export default function Home() {
                     <ChevronRight className="w-5 h-5" />
                   </Link>
                   <Link 
-                    href="tel:404-555-0123"
+                    href={`tel:${salonInfo.phone.replace(/\D/g, '')}`}
                     className="border-2 border-white text-white px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-[#1A1A1A] transition-all duration-300 text-center flex items-center justify-center space-x-2"
                   >
                     <Phone className="w-5 h-5" />
-                    <span>(404) 555-0123</span>
+                    <span>{salonInfo.phone}</span>
                   </Link>
                 </div>
               </div>
@@ -476,33 +521,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {/* Bottom Info Bar */}
-            <div className="mt-16 border-t border-white/20 pt-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center text-white">
-                <div className="flex flex-col items-center space-y-2">
-                  <MapPin className="w-6 h-6" />
-                  <div>
-                    <p className="font-semibold">123 Salon Street</p>
-                    <p className="opacity-90 text-sm">Atlanta, GA 30301</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center space-y-2">
-                  <Clock className="w-6 h-6" />
-                  <div>
-                    <p className="font-semibold">Open Today</p>
-                    <p className="opacity-90 text-sm">9:00 AM - 7:00 PM</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center space-y-2">
-                  <Phone className="w-6 h-6" />
-                  <div>
-                    <p className="font-semibold">Call Us</p>
-                    <p className="opacity-90 text-sm">(404) 555-0123</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </main>
@@ -559,10 +577,13 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-lg mb-4 text-[#FFD700]">Contact</h3>
               <div className="space-y-3 text-gray-300">
-                <p>123 Salon Street</p>
-                <p>Atlanta, GA 30301</p>
-                <p>Phone: (404) 555-0123</p>
+                <p>{salonInfo.address}</p>
+                <p>Phone: {salonInfo.phone}</p>
                 <p>Email: info@atlantapremier.com</p>
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4" />
+                  <span>{isOpen ? 'Open Now' : 'Closed Now'} • 9:00 AM - 7:00 PM</span>
+                </div>
                 
                 {/* Social Media Links */}
                 <div className="flex space-x-4 mt-4">
