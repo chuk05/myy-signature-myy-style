@@ -9,6 +9,76 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          id: string
+          email: string
+          full_name: string | null
+          avatar_url: string | null
+          role: 'customer' | 'staff' | 'admin'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          email: string
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: 'customer' | 'staff' | 'admin'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string | null
+          avatar_url?: string | null
+          role?: 'customer' | 'staff' | 'admin'
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      staff_profiles: {
+        Row: {
+          id: string
+          position: string | null
+          bio: string | null
+          specialization: string[] | null
+          experience_years: number
+          is_active: boolean
+          hire_date: string
+          phone: string | null
+          emergency_contact: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          position?: string | null
+          bio?: string | null
+          specialization?: string[] | null
+          experience_years?: number
+          is_active?: boolean
+          hire_date?: string
+          phone?: string | null
+          emergency_contact?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          position?: string | null
+          bio?: string | null
+          specialization?: string[] | null
+          experience_years?: number
+          is_active?: boolean
+          hire_date?: string
+          phone?: string | null
+          emergency_contact?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
       appointments: {
         Row: {
           id: string
@@ -70,6 +140,41 @@ export interface Database {
           created_at?: string
         }
       }
+      categories: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          color: string
+          icon_name: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          color?: string
+          icon_name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          color?: string
+          icon_name?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       services: {
         Row: {
           id: string
@@ -77,8 +182,9 @@ export interface Database {
           description: string | null
           duration: number
           price: number
-          category: string // NEW FIELD
+          category: string
           is_active: boolean
+          image: string | null
           created_at: string
         }
         Insert: {
@@ -87,8 +193,9 @@ export interface Database {
           description?: string | null
           duration: number
           price: number
-          category: string // NEW FIELD
+          category: string
           is_active?: boolean
+          image?: string | null
           created_at?: string
         }
         Update: {
@@ -97,8 +204,9 @@ export interface Database {
           description?: string | null
           duration?: number
           price?: number
-          category?: string // NEW FIELD
+          category?: string
           is_active?: boolean
+          image?: string | null
           created_at?: string
         }
       }
@@ -109,6 +217,9 @@ export interface Database {
           full_name: string
           specialty: string | null
           phone: string | null
+          image: string | null
+          bio: string | null
+          experience: number | null
           created_at: string
           is_active: boolean
         }
@@ -118,6 +229,9 @@ export interface Database {
           full_name: string
           specialty?: string | null
           phone?: string | null
+          image?: string | null
+          bio?: string | null
+          experience?: number | null
           created_at?: string
           is_active?: boolean
         }
@@ -127,6 +241,9 @@ export interface Database {
           full_name?: string
           specialty?: string | null
           phone?: string | null
+          image?: string | null
+          bio?: string | null
+          experience?: number | null
           created_at?: string
           is_active?: boolean
         }
@@ -155,38 +272,6 @@ export interface Database {
           start_time?: string
           end_time?: string
           is_available?: boolean
-        }
-      }
-      profiles: {
-        Row: {
-          id: string
-          email: string
-          full_name: string | null
-          avatar_url: string | null
-          role: string
-          phone: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          email: string
-          full_name?: string | null
-          avatar_url?: string | null
-          role?: string
-          phone?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          full_name?: string | null
-          avatar_url?: string | null
-          role?: string
-          phone?: string | null
-          created_at?: string
-          updated_at?: string
         }
       }
       staff_services: {
@@ -245,13 +330,37 @@ export interface Database {
   }
 }
 
+// Type definitions for application use
 export type Appointment = Database['public']['Tables']['appointments']['Row']
 export type Customer = Database['public']['Tables']['customers']['Row']
+export type Category = Database['public']['Tables']['categories']['Row']
 export type Service = Database['public']['Tables']['services']['Row']
 export type Staff = Database['public']['Tables']['staff']['Row']
 export type StaffAvailability = Database['public']['Tables']['staff_availability']['Row']
 export type Profile = Database['public']['Tables']['profiles']['Row']
+export type StaffProfile = Database['public']['Tables']['staff_profiles']['Row']
 export type StaffService = Database['public']['Tables']['staff_services']['Row']
 export type WorkingHours = Database['public']['Tables']['working_hours']['Row']
+
+// Insert types
 export type CustomerInsert = Database['public']['Tables']['customers']['Insert']
 export type AppointmentInsert = Database['public']['Tables']['appointments']['Insert']
+export type CategoryInsert = Database['public']['Tables']['categories']['Insert']
+export type ServiceInsert = Database['public']['Tables']['services']['Insert']
+export type StaffInsert = Database['public']['Tables']['staff']['Insert']
+export type StaffAvailabilityInsert = Database['public']['Tables']['staff_availability']['Insert']
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type StaffProfileInsert = Database['public']['Tables']['staff_profiles']['Insert']
+export type StaffServiceInsert = Database['public']['Tables']['staff_services']['Insert']
+export type WorkingHoursInsert = Database['public']['Tables']['working_hours']['Insert']
+
+// Update types
+export type AppointmentUpdate = Database['public']['Tables']['appointments']['Update']
+export type CustomerUpdate = Database['public']['Tables']['customers']['Update']
+export type CategoryUpdate = Database['public']['Tables']['categories']['Update']
+export type ServiceUpdate = Database['public']['Tables']['services']['Update']
+export type StaffUpdate = Database['public']['Tables']['staff']['Update']
+export type StaffAvailabilityUpdate = Database['public']['Tables']['staff_availability']['Update']
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
+export type StaffProfileUpdate = Database['public']['Tables']['staff_profiles']['Update']
+export type WorkingHoursUpdate = Database['public']['Tables']['working_hours']['Update']
