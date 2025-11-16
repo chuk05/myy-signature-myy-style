@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/utils/supabase/server'
 
 export async function GET() {
   try {
-    const supabase = await createClient()
     
     const { data: services, error } = await supabase
       .from('services')
@@ -25,7 +24,6 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const serviceData = await request.json()
 
     // Validate required fields
@@ -66,7 +64,6 @@ export async function POST(request: NextRequest) {
 // Handle PUT and DELETE with query parameters
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     
@@ -97,7 +94,6 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     

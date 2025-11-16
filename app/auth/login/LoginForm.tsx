@@ -2,26 +2,22 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation' // Remove useSearchParams import
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/utils/supabase/client'
 import { Eye, EyeOff, Lock, Mail, Scissors } from 'lucide-react'
 
-// Add redirectTo as a prop
 interface LoginFormProps {
   redirectTo?: string
 }
 
 export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
-  const [email, setEmail] = useState('staff@salon.com')
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('') // Remove hardcoded email
+  const [password, setPassword] = useState('') // Remove hardcoded password
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
-  // Remove useSearchParams line
-  // const searchParams = useSearchParams()
-  // const redirectTo = searchParams.get('redirect') || '/'
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,16 +34,52 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
 
       console.log('Login response:', { data, error })
 
+      // In LoginForm.tsx - Update the error handling
       if (error) {
         console.error('Login error:', error)
+
+        // Handle email confirmation error specifically
+        if (error.message.includes('Email not confirmed')) {
+          throw new Error(`
+            Email not confirmed. 
+
+            Please check your email for the confirmation link.
+            If you didn't receive it, you can:
+
+            1. Check your spam folder
+            2. Request a new confirmation email
+            3. Contact support if the issue persists
+          `)
+        }
+
         throw error
       }
 
+      // In the handleLogin function, replace the redirect part:
       if (data.user) {
         console.log('Login successful, user:', data.user)
-        // Wait a moment for session to be established
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        router.push(redirectTo) // Use the prop
+
+        // Wait for session to be established and profile to load
+        await new Promise(resolve => setTimeout(resolve, 1500))
+
+        // Get user profile to determine role-based redirect
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single()
+      
+        let redirectPath = redirectTo
+        if (profile) {
+          if (profile.role === 'admin') {
+            redirectPath = '/admin'
+          } else if (profile.role === 'staff') {
+            redirectPath = '/staff/dashboard'
+          }
+        }
+  
+        console.log('Redirecting to:', redirectPath)
+        router.push(redirectPath)
         router.refresh()
       }
     } catch (error: any) {
@@ -78,7 +110,22 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         <form className="mt-8 space-y-6 bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20" onSubmit={handleLogin}>
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
-              {error}
+              // In LoginForm.tsx error display, add this:
+              {error && (
+                <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                  {error.includes('Email not confirmed') && (
+                    <div className="mt-2">
+                      <Link 
+                        href="/auth/resend-confirmation" 
+                        className="text-[#FFD700] hover:underline text-sm"
+                      >
+                        Resend confirmation email
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mt-2 text-xs">
                 <Link href="/setup-staff" className="text-[#FFD700] hover:underline">
                   Need to create staff user first?
@@ -104,7 +151,7 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-transparent"
-                placeholder="Email address"
+                placeholder="Enter staff email"
               />
             </div>
           </div>
@@ -126,7 +173,7 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="block w-full pl-10 pr-10 py-3 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFD700] focus:border-transparent"
-                placeholder="Password"
+                placeholder="Enter password"
               />
               <button
                 type="button"
@@ -163,15 +210,15 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
               href="/setup-staff"
               className="text-gray-400 hover:text-[#FFD700] text-sm font-medium transition-colors block"
             >
-              Need to setup staff user?
+              Create Staff Account
             </Link>
           </div>
         </form>
 
-        {/* Demo Credentials */}
+        {/* Demo Note */}
         <div className="text-center text-gray-400 text-sm">
-          <p>Try these demo credentials:</p>
-          <p className="font-mono mt-1">staff@example.com / staff123</p>
+          <p>Staff users need to be created in Supabase Auth first</p>
+          <p className="mt-1">Use the "Create Staff Account" link above</p>
         </div>
       </div>
     </div>

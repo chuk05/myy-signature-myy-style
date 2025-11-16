@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { supabase } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -16,7 +16,6 @@ export type ServiceFormData = {
 
 export async function getServices() {
   try {
-    const supabase = await createClient()
     
     const { data: services, error } = await supabase
       .from('services')
@@ -37,9 +36,7 @@ export async function getServices() {
 }
 
 export async function createService(formData: ServiceFormData) {
-  try {
-    const supabase = await createClient()
-    
+  try {    
     const { data, error } = await supabase
       .from('services')
       .insert([{
@@ -68,9 +65,7 @@ export async function createService(formData: ServiceFormData) {
 }
 
 export async function updateService(id: string, formData: Partial<ServiceFormData>) {
-  try {
-    const supabase = await createClient()
-    
+  try {    
     const { data, error } = await supabase
       .from('services')
       .update(formData)
@@ -92,9 +87,7 @@ export async function updateService(id: string, formData: Partial<ServiceFormDat
 }
 
 export async function deleteService(id: string) {
-  try {
-    const supabase = await createClient()
-    
+  try {    
     const { error } = await supabase
       .from('services')
       .delete()
@@ -114,9 +107,7 @@ export async function deleteService(id: string) {
 }
 
 export async function toggleServiceStatus(id: string, isActive: boolean) {
-  try {
-    const supabase = await createClient()
-    
+  try {    
     const { error } = await supabase
       .from('services')
       .update({ is_active: isActive })

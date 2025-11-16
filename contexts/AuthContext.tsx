@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // First try to fetch profile
+      // Only fetch existing profile, don't create automatically
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -34,29 +34,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (profileError) {
-        console.log('Profile fetch error:', profileError)
-        // If profile doesn't exist, create one
-        if (profileError.code === 'PGRST116') {
-          const { data: userData } = await supabase.auth.getUser()
-          if (userData.user) {
-            const { data: newProfile } = await supabase
-              .from('profiles')
-              .insert({
-                id: userData.user.id,
-                email: userData.user.email,
-                full_name: userData.user.user_metadata?.full_name || userData.user.email,
-                role: 'customer'
-              })
-              .select()
-              .single()
-            
-            if (newProfile) {
-              setProfile(newProfile)
-            }
-          }
-          return
-        }
-        throw profileError
+        console.log('No profile found for user:', profileError)
+        // Don't auto-create profile - user must login properly
+        return
       }
 
       setProfile(profileData)
@@ -72,13 +52,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           if (!staffError && staffData) {
             setStaffProfile(staffData)
-          } else if (staffError && staffError.code === 'PGRST116') {
-            // Staff profile doesn't exist, that's fine
-            console.log('No staff profile found for user')
           }
         } catch (staffError) {
           console.log('Error fetching staff profile:', staffError)
-          // Continue without staff profile
         }
       }
     } catch (error) {
@@ -108,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email)
+      
       setSession(session)
       setUser(session?.user ?? null)
       
