@@ -224,7 +224,7 @@ function BookingContent() {
             <Link href="/" className="flex items-center h-full py-4">
               <div className="relative h-full flex items-center">
                 <Image
-                  src="images/logos/logo-white.png"
+                  src="/images/logos/logo-white.png"
                   alt="Myy Signature Myy Style"
                   width={360}
                   height={64}

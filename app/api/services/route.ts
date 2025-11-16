@@ -3,11 +3,21 @@ import { supabase } from '@/utils/supabase/server'
 
 export async function GET() {
   try {
-    
     const { data: services, error } = await supabase
       .from('services')
-      .select('*')
-      .order('category')
+      .select(`
+        *,
+        categories:category_id (
+          id,
+          name,
+          description,
+          color,
+          icon_name,
+          sort_order,
+          is_active
+        )
+      `)
+      .order('category_id')  // Fixed: changed 'category' to 'category_id'
       .order('name')
 
     if (error) {
@@ -26,10 +36,10 @@ export async function POST(request: NextRequest) {
   try {
     const serviceData = await request.json()
 
-    // Validate required fields
-    if (!serviceData.name || !serviceData.category || !serviceData.duration || !serviceData.price) {
+    // Validate required fields - Fixed: changed 'category' to 'category_id'
+    if (!serviceData.name || !serviceData.category_id || !serviceData.duration || !serviceData.price) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, category, duration, price' },
+        { error: 'Missing required fields: name, category_id, duration, price' },  // Fixed error message
         { status: 400 }
       )
     }
@@ -41,12 +51,21 @@ export async function POST(request: NextRequest) {
         description: serviceData.description || null,
         duration: parseInt(serviceData.duration),
         price: parseFloat(serviceData.price),
-        category: serviceData.category,
+        category_id: serviceData.category_id,  // Fixed: changed 'category' to 'category_id'
         image: serviceData.image || null,
         is_active: serviceData.is_active !== false, // default to true
         created_at: new Date().toISOString()
       }])
-      .select()
+      .select(`
+        *,
+        categories:category_id (
+          id,
+          name,
+          description,
+          color,
+          icon_name
+        )
+      `)
       .single()
 
     if (error) {
@@ -73,11 +92,27 @@ export async function PUT(request: NextRequest) {
 
     const serviceData = await request.json()
 
+    // If category is being updated, map it to category_id
+    const updateData = { ...serviceData };
+    if (updateData.category !== undefined) {
+      updateData.category_id = updateData.category;
+      delete updateData.category;
+    }
+
     const { data, error } = await supabase
       .from('services')
-      .update(serviceData)
+      .update(updateData)  // Use the mapped data
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        categories:category_id (
+          id,
+          name,
+          description,
+          color,
+          icon_name
+        )
+      `)
       .single()
 
     if (error) {
