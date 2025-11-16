@@ -55,19 +55,19 @@ function BookingContent() {
   // Booking Carousel Images
   const carouselImages = [
     {
-      src: '/images/booking-hero-1.jpg',
+      src: '/images/booking/booking-hero-1.jpg',
       alt: 'Booking Process',
       title: 'Book Your Perfect Appointment',
       description: 'Easy 4-step process to schedule your dream hairstyle'
     },
     {
-      src: '/images/booking-hero-2.jpg',
+      src: '/images/booking/booking-hero-2.jpg',
       alt: 'Expert Stylists',
       title: 'Choose Your Expert Stylist',
       description: 'Work with our talented team of hair professionals'
     },
     {
-      src: '/images/booking-hero-3.jpg',
+      src: '/images/booking/booking-hero-3.jpg',
       alt: 'Salon Experience',
       title: 'Premium Salon Experience',
       description: 'Enjoy our luxurious Atlanta salon environment'
@@ -224,7 +224,7 @@ function BookingContent() {
             <Link href="/" className="flex items-center h-full py-4">
               <div className="relative h-full flex items-center">
                 <Image
-                  src="/logos/logo-white.png"
+                  src="images/logos/logo-white.png"
                   alt="Myy Signature Myy Style"
                   width={360}
                   height={64}

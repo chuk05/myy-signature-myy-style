@@ -1,16 +1,20 @@
-// app/auth/login/page.tsx
+// /app/auth/login/page.tsx
 import { Suspense } from 'react'
 import LoginForm from './LoginForm'
 import LoginFormSkeleton from './LoginFormSkeleton'
 
 interface LoginPageProps {
-  searchParams: { redirect?: string }
+  searchParams: Promise<{ redirect?: string }>
 }
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  // Await the searchParams Promise
+  const params = await searchParams
+  const redirectTo = params.redirect || '/'
+
   return (
     <Suspense fallback={<LoginFormSkeleton />}>
-      <LoginForm redirectTo={searchParams.redirect} />
+      <LoginForm redirectTo={redirectTo} />
     </Suspense>
   )
 }
