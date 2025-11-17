@@ -1,3 +1,4 @@
+// /middleware.ts - ENHANCE SESSION HANDLING
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -20,7 +21,7 @@ export async function middleware(request: NextRequest) {
           response.cookies.set({
             name,
             value,
-              ...options,
+            ...options,
           })
         },
         remove(name: string, options: any) {
@@ -34,14 +35,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh the session
+  // Refresh the session - this ensures the session stays active
   const { data: { session } } = await supabase.auth.getSession()
 
   // Protected routes
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
-  const isStaffDashboard = request.nextUrl.pathname.startsWith('/staff/dashboard')
+  const isStaffRoute = request.nextUrl.pathname.startsWith('/staff')
 
-  if (isAdminRoute || isStaffDashboard) {
+  if (isAdminRoute || isStaffRoute) {
     // Redirect to login if not authenticated
     if (!session) {
       const redirectUrl = new URL('/auth/login', request.url)
@@ -56,8 +57,13 @@ export async function middleware(request: NextRequest) {
       .eq('id', session.user.id)
       .single()
 
-    // Redirect to home if not staff/admin
-    if (!profile || (profile.role !== 'staff' && profile.role !== 'admin')) {
+    // Admin routes require admin role
+    if (isAdminRoute && (!profile || profile.role !== 'admin')) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    // Staff routes require staff or admin role
+    if (isStaffRoute && (!profile || (profile.role !== 'staff' && profile.role !== 'admin'))) {
       return NextResponse.redirect(new URL('/', request.url))
     }
   }
@@ -67,13 +73,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/admin/:path*',
+    '/staff/:path*',
   ],
 }

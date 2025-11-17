@@ -1,9 +1,45 @@
+// /app/api/services/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/utils/supabase/server'
 
-export async function GET() {
+// Consistent category mapping based on your service table
+const CATEGORY_SLUG_MAP: { [key: string]: string } = {
+  'women': 'womens-hair',
+  'womens-hair': 'womens-hair',
+  'color': 'color-services', 
+  'color-services': 'color-services',
+  'treatment': 'treatment-services',
+  'treatment-services': 'treatment-services',
+  'men': 'mens-grooming',
+  'mens-grooming': 'mens-grooming',
+  'special': 'specialty-services',
+  'specialty-services': 'specialty-services',
+  'texture': 'texture-services',
+  'texture-services': 'texture-services',
+  'kids': 'kids-services',
+  'kids-services': 'kids-services',
+  'addon': 'add-on-services',
+  'add-on-services': 'add-on-services'
+} as const;
+
+// Category display names
+const CATEGORY_DISPLAY_NAMES: { [key: string]: string } = {
+  'womens-hair': "Women's Hair",
+  'color-services': 'Color Services',
+  'treatment-services': 'Treatment Services', 
+  'mens-grooming': "Men's Grooming",
+  'specialty-services': 'Specialty Services',
+  'texture-services': 'Texture Services',
+  'kids-services': 'Kids Services',
+  'add-on-services': 'Add-on Services'
+};
+
+export async function GET(request: NextRequest) {
   try {
-    const { data: services, error } = await supabase
+    const { searchParams } = new URL(request.url)
+    const categorySlug = searchParams.get('category')
+    
+    let query = supabase
       .from('services')
       .select(`
         *,
@@ -17,29 +53,59 @@ export async function GET() {
           is_active
         )
       `)
-      .order('category_id')  // Fixed: changed 'category' to 'category_id'
+      .eq('is_active', true)
+      .order('display_order')
       .order('name')
+
+    // If category filter is provided, use consistent category mapping
+    if (categorySlug && categorySlug !== 'all') {
+      const mappedCategory = CATEGORY_SLUG_MAP[categorySlug.toLowerCase()];
+      
+      if (!mappedCategory) {
+        console.log(`Category slug "${categorySlug}" not found in mapping`);
+        return NextResponse.json([]); // Return empty array for unknown categories
+      }
+
+      // Get category ID from the mapped category name
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', CATEGORY_DISPLAY_NAMES[mappedCategory] || mappedCategory)
+        .eq('is_active', true)
+        .single()
+
+      if (categoryError || !categoryData) {
+        console.log(`Category "${mappedCategory}" not found in database, returning all services`);
+        // Continue without filtering if category doesn't exist in DB yet
+      } else {
+        query = query.eq('category_id', categoryData.id)
+      }
+    }
+
+    const { data: services, error } = await query
 
     if (error) {
       console.error('Supabase error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(services)
+    return NextResponse.json(services || [])
   } catch (error) {
     console.error('Server error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// POST, PUT, DELETE methods remain the same but ensure they use consistent categories...
+
 export async function POST(request: NextRequest) {
   try {
     const serviceData = await request.json()
 
-    // Validate required fields - Fixed: changed 'category' to 'category_id'
+    // Validate required fields
     if (!serviceData.name || !serviceData.category_id || !serviceData.duration || !serviceData.price) {
       return NextResponse.json(
-        { error: 'Missing required fields: name, category_id, duration, price' },  // Fixed error message
+        { error: 'Missing required fields: name, category_id, duration, price' },
         { status: 400 }
       )
     }
@@ -51,10 +117,12 @@ export async function POST(request: NextRequest) {
         description: serviceData.description || null,
         duration: parseInt(serviceData.duration),
         price: parseFloat(serviceData.price),
-        category_id: serviceData.category_id,  // Fixed: changed 'category' to 'category_id'
+        category_id: serviceData.category_id,
         image: serviceData.image || null,
-        is_active: serviceData.is_active !== false, // default to true
-        created_at: new Date().toISOString()
+        is_active: serviceData.is_active !== false,
+        display_order: serviceData.display_order || 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }])
       .select(`
         *,
@@ -63,7 +131,9 @@ export async function POST(request: NextRequest) {
           name,
           description,
           color,
-          icon_name
+          icon_name,
+          sort_order,
+          is_active
         )
       `)
       .single()
@@ -80,7 +150,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Handle PUT and DELETE with query parameters
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -92,16 +161,14 @@ export async function PUT(request: NextRequest) {
 
     const serviceData = await request.json()
 
-    // If category is being updated, map it to category_id
-    const updateData = { ...serviceData };
-    if (updateData.category !== undefined) {
-      updateData.category_id = updateData.category;
-      delete updateData.category;
-    }
+    const updateData = { 
+      ...serviceData,
+      updated_at: new Date().toISOString()
+    };
 
     const { data, error } = await supabase
       .from('services')
-      .update(updateData)  // Use the mapped data
+      .update(updateData)
       .eq('id', id)
       .select(`
         *,
@@ -110,7 +177,9 @@ export async function PUT(request: NextRequest) {
           name,
           description,
           color,
-          icon_name
+          icon_name,
+          sort_order,
+          is_active
         )
       `)
       .single()

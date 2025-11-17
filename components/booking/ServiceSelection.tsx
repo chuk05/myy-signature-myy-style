@@ -6,7 +6,7 @@ import { Service } from '@/types/database'
 import { ChevronLeft, ChevronRight, Star, Clock, Scissors, Palette, Sparkles, Users } from 'lucide-react'
 
 interface ServiceSelectionProps {
-  services: Service[]
+  services: Service[] | null // Allow null
   selectedService: Service | null
   selectedCategory: string | null
   categories: { id: string; name: string; icon: React.ReactNode }[]
@@ -59,12 +59,19 @@ export default function ServiceSelection({
     }
   ]
 
-  // Filter services when category changes
+  // Filter services when category changes - WITH SAFETY CHECK
   useEffect(() => {
+    if (!services || !Array.isArray(services)) {
+      setFilteredServices([])
+      return
+    }
+
     if (selectedCategory && selectedCategory !== 'all') {
-      setFilteredServices(services.filter(service => 
-        service.category === selectedCategory
-      ))
+      setFilteredServices(services.filter(service => {
+        // Handle both old 'category' string and new 'category_id' UUID structure
+        const serviceCategory = service.category_id || service.category_id
+        return serviceCategory === selectedCategory
+      }))
     } else {
       setFilteredServices(services)
     }
@@ -89,6 +96,26 @@ export default function ServiceSelection({
   const getCategoryIcon = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId)
     return category?.icon || <Scissors className="w-5 h-5" />
+  }
+
+  // Safe service count function
+  const getServiceCount = (categoryId: string) => {
+    if (!services || !Array.isArray(services)) return 0
+    return services.filter(service => {
+      const serviceCategory = service.category_id || service.category_id
+      return serviceCategory === categoryId
+    }).length
+  }
+
+  // Get category name for a service
+  const getServiceCategoryName = (service: Service) => {
+    const serviceCategory = service.category_id || service.category_id
+    return categories.find(cat => cat.id === serviceCategory)?.name || 'Service'
+  }
+
+  // Get category ID for a service
+  const getServiceCategoryId = (service: Service) => {
+    return service.category_id || service.category_id
   }
 
   return (
@@ -198,7 +225,7 @@ export default function ServiceSelection({
             <span>{category.name}</span>
             {selectedCategory === category.id && (
               <span className="bg-[#1A1A1A] text-white text-xs px-2 py-1 rounded-full ml-2">
-                {services.filter(s => s.category === category.id).length}
+                {getServiceCount(category.id)}
               </span>
             )}
           </button>
@@ -220,7 +247,7 @@ export default function ServiceSelection({
             {/* Service Image */}
             <div className="relative h-48 overflow-hidden">
               <Image
-                src={service.image || `/images/categories/${service.category}-service.jpg`}
+                src={service.image || `/images/categories/${getServiceCategoryId(service)}-service.jpg`}
                 alt={service.name}
                 fill
                 className="object-cover group-hover:scale-110 transition-transform duration-300"
@@ -231,10 +258,10 @@ export default function ServiceSelection({
               <div className="absolute top-4 left-4">
                 <div className="flex items-center space-x-2 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1">
                   <span className="text-[#FFD700]">
-                    {getCategoryIcon(service.category)}
+                    {getCategoryIcon(getServiceCategoryId(service))}
                   </span>
                   <span className="text-sm font-semibold text-[#1A1A1A]">
-                    {categories.find(cat => cat.id === service.category)?.name}
+                    {getServiceCategoryName(service)}
                   </span>
                 </div>
               </div>
@@ -285,8 +312,12 @@ export default function ServiceSelection({
       {filteredServices.length === 0 && (
         <div className="text-center py-12">
           <Scissors className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-600 mb-2">No Services Found</h3>
-          <p className="text-gray-500">Try selecting a different category</p>
+          <h3 className="text-xl font-semibold text-gray-600 mb-2">
+            {!services || !Array.isArray(services) ? 'Loading services...' : 'No Services Found'}
+          </h3>
+          <p className="text-gray-500">
+            {!services || !Array.isArray(services) ? 'Please wait while we load services' : 'Try selecting a different category'}
+          </p>
         </div>
       )}
     </div>

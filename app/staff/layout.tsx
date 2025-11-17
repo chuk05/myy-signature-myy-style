@@ -1,16 +1,14 @@
-// /app/staff/dashboard/layout.tsx
+// /app/staff/layout.tsx - CREATE THIS FILE IF IT DOESN'T EXIST
 import RouteGuard from '@/components/auth/RouteGuard'
 
-export default function StaffDashboardLayout({
+export default function StaffLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
     <RouteGuard requiredRole="staff">
-      <div className="min-h-screen bg-gray-50">
-        {children}
-      </div>
+      {children}
     </RouteGuard>
   )
 }

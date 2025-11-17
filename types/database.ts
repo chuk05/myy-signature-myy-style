@@ -182,10 +182,15 @@ export interface Database {
           description: string | null
           duration: number
           price: number
-          category: string
-          is_active: boolean
+          duration_range: string | null  // Add this
+          price_range: string | null     // Add this
+          category_id: string | null     // Changed from 'category'
           image: string | null
+          is_active: boolean
+          is_addon: boolean | null       // Add this
+          display_order: number | null   // Add this
           created_at: string
+          updated_at: string             // Add this
         }
         Insert: {
           id?: string
@@ -193,10 +198,15 @@ export interface Database {
           description?: string | null
           duration: number
           price: number
-          category: string
-          is_active?: boolean
+          duration_range?: string | null
+          price_range?: string | null
+          category_id?: string | null    // Changed from 'category'
           image?: string | null
+          is_active?: boolean
+          is_addon?: boolean | null
+          display_order?: number | null
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -204,10 +214,15 @@ export interface Database {
           description?: string | null
           duration?: number
           price?: number
-          category?: string
-          is_active?: boolean
+          duration_range?: string | null
+          price_range?: string | null
+          category_id?: string | null    // Changed from 'category'
           image?: string | null
+          is_active?: boolean
+          is_addon?: boolean | null
+          display_order?: number | null
           created_at?: string
+          updated_at?: string
         }
       }
       staff: {

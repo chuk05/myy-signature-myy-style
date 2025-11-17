@@ -1,10 +1,10 @@
-// /app/setup-staff/page.tsx - UPDATED WITH EMAIL CONFIRMATION
+// /app/setup-staff/page.tsx - UPDATED TO HANDLE RLS AND USE API ROUTE
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/utils/supabase/client'
-import { UserPlus, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Send } from 'lucide-react'
+// import { supabase } from '@/utils/supabase/client'
+import { UserPlus, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Send, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SetupStaff() {
@@ -12,7 +12,8 @@ export default function SetupStaff() {
     email: '',
     password: '',
     fullName: '',
-    role: 'staff' as 'staff' | 'admin'
+    role: 'staff' as 'staff' | 'admin',
+    skipConfirmation: false
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -25,113 +26,69 @@ export default function SetupStaff() {
     setIsLoading(true)
     setError('')
     setMessage('')
-
+  
     try {
       console.log('Starting staff creation process...')
-
-      // 1. Create auth user with email confirmation
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            role: formData.role
-          },
-          emailRedirectTo: `${window.location.origin}/auth/confirm`
-        }
-      })
-
-      console.log('Auth response:', { authData, authError })
-
-      if (authError) {
-        console.error('Auth error details:', authError)
-        throw new Error(`Authentication failed: ${authError.message}`)
-      }
-
-      if (!authData.user) {
-        throw new Error('No user data returned from authentication')
-      }
-
-      console.log('Auth user created:', authData.user.id)
-
-      // 2. Create profile immediately (even before email confirmation)
-      console.log('Creating profile...')
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
+    
+      // Use the API route to handle user creation (bypasses RLS)
+      const response = await fetch('/api/auth/setup-staff', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email: formData.email,
-          full_name: formData.fullName,
+          password: formData.password,
+          fullName: formData.fullName,
           role: formData.role,
-          avatar_url: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          skipConfirmation: formData.skipConfirmation
         })
-        .select()
-        .single()
-
-      if (createError) {
-        console.error('Profile creation error:', createError)
-        // If profile exists, update it
-        if (createError.code === '23505') {
-          console.log('Profile exists, updating...')
-          const { data: updatedProfile, error: updateError } = await supabase
-            .from('profiles')
-            .update({
-              email: formData.email,
-              full_name: formData.fullName,
-              role: formData.role,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', authData.user.id)
-            .select()
-            .single()
-
-          if (updateError) throw updateError
+      })
+    
+      let result
+      try {
+        result = await response.json()
+      } catch (jsonError) {
+        console.error('JSON parse error:', jsonError)
+        throw new Error('Server returned invalid response. Check if SUPABASE_SERVICE_ROLE_KEY is set.')
+      }
+    
+      if (!response.ok) {
+        throw new Error(result.error || `Server error: ${response.status}`)
+      }
+    
+      if (result.success) {
+        if (formData.skipConfirmation) {
+          setMessage(`
+            ✅ Staff user created successfully (Development Mode)!
+            
+            User: ${formData.email}
+            Password: ${formData.password}
+            Role: ${formData.role}
+            
+            The user has been auto-confirmed and can login immediately.
+          `)
         } else {
-          throw createError
+          setMessage(`
+            ✅ Staff user created successfully!
+            
+            An email confirmation link has been sent to ${formData.email}.
+            Please check your email and click the confirmation link to activate your account.
+            
+            After confirmation, you'll be able to login with your credentials.
+          `)
         }
+      
+        // Reset form but keep role selection
+        setFormData(prev => ({ 
+          email: '', 
+          password: '', 
+          fullName: '', 
+          role: prev.role,
+          skipConfirmation: false 
+        }))
       }
-
-      // 3. Create staff profile if role is staff/admin
-      if (formData.role === 'staff' || formData.role === 'admin') {
-        console.log('Creating staff profile...')
-        
-        const { error: staffCreateError } = await supabase
-          .from('staff_profiles')
-          .insert({
-            id: authData.user.id,
-            position: formData.role === 'admin' ? 'Administrator' : 'Stylist',
-            bio: `${formData.role} at Myy Signature Myy Style`,
-            specialization: ['General Styling'],
-            experience_years: 1,
-            is_active: false, // Inactive until email confirmed
-            hire_date: new Date().toISOString().split('T')[0],
-            phone: null,
-            emergency_contact: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
-
-        if (staffCreateError) {
-          console.warn('Staff profile creation failed:', staffCreateError)
-        }
-      }
-
-      // Success message with email confirmation info
-      setMessage(`
-        ✅ Staff user created successfully!
-        
-        An email confirmation link has been sent to ${formData.email}.
-        Please check your email and click the confirmation link to activate your account.
-        
-        After confirmation, you'll be able to login with your credentials.
-      `)
-
-      // Reset form
-      setFormData({ email: '', password: '', fullName: '', role: 'staff' })
-
+    
     } catch (error: any) {
       console.error('Complete error details:', error)
       setError(error.message || 'Failed to create staff user. Check console for details.')
@@ -139,8 +96,8 @@ export default function SetupStaff() {
       setIsLoading(false)
     }
   }
-
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  
+  const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -159,7 +116,7 @@ export default function SetupStaff() {
           </div>
           <h2 className="text-3xl font-bold text-white">Setup Staff User</h2>
           <p className="mt-2 text-gray-300">
-            Create staff/admin user with email confirmation
+            Create staff/admin user accounts
           </p>
         </div>
 
@@ -277,6 +234,21 @@ export default function SetupStaff() {
             </select>
           </div>
 
+          {/* Development Option */}
+          <div className="flex items-center space-x-2 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <input
+              id="skipConfirmation"
+              name="skipConfirmation"
+              type="checkbox"
+              checked={formData.skipConfirmation}
+              onChange={(e) => handleInputChange('skipConfirmation', e.target.checked)}
+              className="w-4 h-4 text-[#FFD700] bg-gray-700 border-gray-600 rounded focus:ring-[#FFD700] focus:ring-2"
+            />
+            <label htmlFor="skipConfirmation" className="text-sm text-yellow-200">
+              Skip email confirmation (Development only)
+            </label>
+          </div>
+
           <div>
             <button
               type="submit"
@@ -286,12 +258,12 @@ export default function SetupStaff() {
               {isLoading ? (
                 <>
                   <Send className="w-4 h-4 mr-2 animate-pulse" />
-                  Sending Confirmation...
+                  Creating User...
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Create Staff User & Send Email
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Create Staff User
                 </>
               )}
             </button>
@@ -300,8 +272,8 @@ export default function SetupStaff() {
 
         {/* Info */}
         <div className="text-center text-gray-400 text-sm">
-          <p>User will receive an email confirmation link to activate their account</p>
-          <p className="mt-1">Account will be inactive until email is confirmed</p>
+          <p>For production: Users receive email confirmation</p>
+          <p className="mt-1">For development: Check "Skip email confirmation"</p>
         </div>
       </div>
     </div>

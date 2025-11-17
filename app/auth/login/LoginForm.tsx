@@ -12,8 +12,8 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
-  const [email, setEmail] = useState('') // Remove hardcoded email
-  const [password, setPassword] = useState('') // Remove hardcoded password
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -34,53 +34,63 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
 
       console.log('Login response:', { data, error })
 
-      // In LoginForm.tsx - Update the error handling
       if (error) {
-        console.error('Login error:', error)
-
-        // Handle email confirmation error specifically
         if (error.message.includes('Email not confirmed')) {
           throw new Error(`
             Email not confirmed. 
-
             Please check your email for the confirmation link.
-            If you didn't receive it, you can:
-
-            1. Check your spam folder
-            2. Request a new confirmation email
-            3. Contact support if the issue persists
           `)
         }
-
         throw error
       }
 
-      // In the handleLogin function, replace the redirect part:
       if (data.user) {
         console.log('Login successful, user:', data.user)
 
-        // Wait for session to be established and profile to load
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 1000))
 
         // Get user profile to determine role-based redirect
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', data.user.id)
           .single()
       
         let redirectPath = redirectTo
-        if (profile) {
+        
+        // If profile doesn't exist, create one
+        if (profileError && profileError.code === 'PGRST116') {
+          console.log('Profile not found, creating default profile...')
+          
+          // Create a default profile with customer role
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: data.user.id,
+              email: data.user.email,
+              full_name: data.user.user_metadata?.full_name || '',
+              role: 'customer'
+            }])
+          
+          if (createError) {
+            console.error('Error creating profile:', createError)
+          } else {
+            console.log('Default profile created')
+          }
+        } else if (profile) {
+          // Use existing profile role
           if (profile.role === 'admin') {
             redirectPath = '/admin'
           } else if (profile.role === 'staff') {
             redirectPath = '/staff/dashboard'
           }
         }
-  
+
         console.log('Redirecting to:', redirectPath)
-        router.push(redirectPath)
-        router.refresh()
+        
+        // Use window.location for a hard redirect to ensure fresh state
+        window.location.href = redirectPath
       }
     } catch (error: any) {
       console.error('Login catch error:', error)
@@ -110,20 +120,15 @@ export default function LoginForm({ redirectTo = '/' }: LoginFormProps) {
         <form className="mt-8 space-y-6 bg-white/10 backdrop-blur-md p-8 rounded-2xl border border-white/20" onSubmit={handleLogin}>
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
-              // In LoginForm.tsx error display, add this:
-              {error && (
-                <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg text-sm">
-                  {error}
-                  {error.includes('Email not confirmed') && (
-                    <div className="mt-2">
-                      <Link 
-                        href="/auth/resend-confirmation" 
-                        className="text-[#FFD700] hover:underline text-sm"
-                      >
-                        Resend confirmation email
-                      </Link>
-                    </div>
-                  )}
+              {error}
+              {error.includes('Email not confirmed') && (
+                <div className="mt-2">
+                  <Link 
+                    href="/auth/resend-confirmation" 
+                    className="text-[#FFD700] hover:underline text-sm"
+                  >
+                    Resend confirmation email
+                  </Link>
                 </div>
               )}
               <div className="mt-2 text-xs">

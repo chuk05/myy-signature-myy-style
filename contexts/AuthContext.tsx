@@ -1,3 +1,4 @@
+// /contexts/AuthContext.tsx
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -26,7 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      // Only fetch existing profile, don't create automatically
+      console.log('Fetching profile for user:', userId)
+      
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -34,14 +36,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single()
 
       if (profileError) {
-        console.log('No profile found for user:', profileError)
-        // Don't auto-create profile - user must login properly
-        return
+        console.log('Profile fetch error:', profileError)
+        
+        // If profile doesn't exist, create a default one
+        if (profileError.code === 'PGRST116') {
+          console.log('Profile not found, creating default profile...')
+          
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: userId,
+              email: user?.email || '',
+              full_name: user?.user_metadata?.full_name || '',
+              role: 'customer'
+            }])
+            .select()
+            .single()
+
+          if (!createError && newProfile) {
+            console.log('Default profile created:', newProfile)
+            setProfile(newProfile)
+            return newProfile
+          }
+        }
+        return null
       }
 
+      console.log('Profile fetched:', profileData)
       setProfile(profileData)
 
-      // Try to fetch staff profile if user is staff or admin
+      // Fetch staff profile if user is staff/admin
       if (profileData?.role === 'staff' || profileData?.role === 'admin') {
         try {
           const { data: staffData, error: staffError } = await supabase
@@ -51,59 +75,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .single()
 
           if (!staffError && staffData) {
+            console.log('Staff profile fetched:', staffData)
             setStaffProfile(staffData)
+          } else {
+            console.log('No staff profile found or error:', staffError)
+            setStaffProfile(null)
           }
         } catch (staffError) {
-          console.log('Error fetching staff profile:', staffError)
+          console.log('Staff profile fetch error:', staffError)
+          setStaffProfile(null)
         }
+      } else {
+        setStaffProfile(null)
       }
+
+      return profileData
     } catch (error) {
       console.error('Error in fetchProfile:', error)
+      return null
     }
   }
 
   useEffect(() => {
-    const getSession = async () => {
+    // Initial session check
+    const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        setSession(session)
-        setUser(session?.user ?? null)
+        console.log('Initializing auth...')
+        const { data: { session: currentSession } } = await supabase.auth.getSession()
+        console.log('Initial session:', currentSession?.user?.email)
         
-        if (session?.user) {
-          await fetchProfile(session.user.id)
+        setSession(currentSession)
+        setUser(currentSession?.user ?? null)
+        
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id)
         }
       } catch (error) {
-        console.error('Error getting session:', error)
+        console.error('Error initializing auth:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    getSession()
+    initializeAuth()
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event, session?.user?.email)
-      
-      setSession(session)
-      setUser(session?.user ?? null)
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
-        setProfile(null)
-        setStaffProfile(null)
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        console.log('Auth state changed:', event, currentSession?.user?.email)
+        
+        setSession(currentSession)
+        setUser(currentSession?.user ?? null)
+        
+        if (currentSession?.user) {
+          await fetchProfile(currentSession.user.id)
+        } else {
+          setProfile(null)
+          setStaffProfile(null)
+        }
+        
+        setIsLoading(false)
       }
-      
-      setIsLoading(false)
-    })
+    )
 
     return () => subscription.unsubscribe()
   }, [])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      console.log('Signing out...')
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Clear local state immediately
+      setUser(null)
+      setProfile(null)
+      setStaffProfile(null)
+      setSession(null)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   const refreshProfile = async () => {
@@ -112,18 +163,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const value = {
+    user,
+    profile,
+    staffProfile,
+    session,
+    isLoading,
+    signOut,
+    refreshProfile,
+  }
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        profile,
-        staffProfile,
-        session,
-        isLoading,
-        signOut,
-        refreshProfile,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
